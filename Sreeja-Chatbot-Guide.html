@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sreeja's Guide — How Our AI Chatbot Works</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A4%96%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0a0b;
+    --bg-soft:#0f0f12;
+    --surface:#141418;
+    --surface-2:#1a1a20;
+    --border:#26262e;
+    --border-soft:#1e1e25;
+    --text:#ededf2;
+    --text-dim:#a3a3af;
+    --text-faint:#6c6c78;
+    --accent:#ff6a3d;
+    --accent-2:#ffae63;
+    --green:#54e08a;
+    --red:#ff6363;
+    --amber:#ffc861;
+    --blue:#6ea8ff;
+    --radius:18px;
+    --radius-sm:10px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:
+      radial-gradient(1100px 600px at 80% -10%, #1c120c 0%, transparent 55%),
+      radial-gradient(900px 500px at -10% 10%, #0e1420 0%, transparent 50%),
+      var(--bg);
+    color:var(--text);
+    line-height:1.7;
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:840px;margin:0 auto;padding:0 24px;}
+
+  /* ── Hero ─────────────────────────────────────────── */
+  .hero{
+    text-align:center;
+    padding:96px 24px 64px;
+    position:relative;
+  }
+  .hero .robot{
+    width:84px;height:84px;border-radius:24px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:42px;margin-bottom:28px;
+    background:linear-gradient(135deg,#ff6a3d,#ff9a4d);
+    box-shadow:0 20px 60px -15px #ff6a3d66, inset 0 1px 0 #ffffff55;
+  }
+  .eyebrow{
+    font-family:'Space Grotesk',sans-serif;
+    text-transform:uppercase;letter-spacing:.28em;
+    font-size:.72rem;font-weight:600;color:var(--accent);
+    margin-bottom:18px;
+  }
+  .hero h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(2.4rem,6vw,3.6rem);
+    font-weight:700;line-height:1.05;letter-spacing:-0.03em;
+    color:#fff;margin-bottom:20px;
+  }
+  .hero h1 .grad{
+    background:linear-gradient(120deg,#ff6a3d,#ffc861);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p{
+    font-size:1.08rem;color:var(--text-dim);max-width:540px;margin:0 auto;
+  }
+  .hero .by{
+    margin-top:28px;font-size:.82rem;color:var(--text-faint);
+    font-family:'Space Grotesk',sans-serif;letter-spacing:.04em;
+  }
+  .hr-glow{
+    height:1px;max-width:840px;margin:40px auto 0;
+    background:linear-gradient(90deg,transparent,#ff6a3d55,transparent);
+  }
+
+  /* ── Table of contents ────────────────────────────── */
+  .toc{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:28px 30px;margin:56px 0;
+  }
+  .toc h4{
+    font-family:'Space Grotesk',sans-serif;font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.2em;color:var(--text-faint);
+    font-weight:600;margin-bottom:18px;
+  }
+  .toc ol{list-style:none;counter-reset:toc;display:grid;gap:2px;}
+  .toc li{counter-increment:toc;}
+  .toc a{
+    display:flex;align-items:center;gap:14px;
+    padding:11px 12px;border-radius:var(--radius-sm);
+    color:var(--text-dim);text-decoration:none;font-weight:400;
+    transition:background .15s,color .15s;
+  }
+  .toc a:hover{background:var(--surface-2);color:#fff;}
+  .toc a::before{
+    content:counter(toc,decimal-leading-zero);
+    font-family:'JetBrains Mono',monospace;font-size:.8rem;
+    color:var(--accent);min-width:24px;
+  }
+
+  /* ── Sections ─────────────────────────────────────── */
+  section{padding:48px 0;border-top:1px solid var(--border-soft);}
+  .sec-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.18em;color:var(--accent);
+    background:#ff6a3d14;border:1px solid #ff6a3d33;
+    padding:6px 12px;border-radius:99px;margin-bottom:20px;
+  }
+  h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(1.7rem,4vw,2.3rem);font-weight:700;
+    letter-spacing:-0.02em;color:#fff;line-height:1.12;margin-bottom:16px;
+  }
+  h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.22rem;font-weight:600;color:#fff;
+    margin:34px 0 12px;letter-spacing:-0.01em;
+  }
+  p{margin-bottom:16px;color:var(--text-dim);}
+  p strong,li strong{color:var(--text);font-weight:600;}
+  .lead{font-size:1.12rem;color:var(--text);font-weight:400;}
+  ul.clean{list-style:none;display:grid;gap:12px;margin:18px 0;}
+  ul.clean li{
+    position:relative;padding-left:30px;color:var(--text-dim);
+  }
+  ul.clean li::before{
+    content:"";position:absolute;left:6px;top:11px;
+    width:7px;height:7px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 10px var(--accent);
+  }
+
+  /* ── Callout boxes ────────────────────────────────── */
+  .callout{
+    border-radius:var(--radius);padding:24px 26px;margin:26px 0;
+    border:1px solid var(--border);background:var(--surface);
+    display:flex;gap:18px;align-items:flex-start;
+  }
+  .callout .ico{font-size:26px;line-height:1;flex-shrink:0;margin-top:2px;}
+  .callout h4{
+    font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:600;
+    color:#fff;margin-bottom:6px;
+  }
+  .callout p{margin:0;font-size:.96rem;}
+  .callout.example{background:linear-gradient(180deg,#19130d,#120f0c);border-color:#3a2a1a;}
+  .callout.example h4{color:var(--accent-2);}
+  .callout.tip{background:#0e1714;border-color:#1f3b30;}
+  .callout.tip h4{color:var(--green);}
+  .callout.warn{background:#1a1010;border-color:#3d2020;}
+  .callout.warn h4{color:var(--red);}
+
+  /* ── Flow chart ───────────────────────────────────── */
+  .flow{margin:34px 0;display:grid;gap:0;}
+  .flow-step{
+    display:grid;grid-template-columns:56px 1fr;gap:18px;align-items:stretch;
+  }
+  .flow-rail{display:flex;flex-direction:column;align-items:center;}
+  .flow-num{
+    width:46px;height:46px;border-radius:14px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem;
+    color:#fff;background:var(--surface-2);border:1px solid var(--border);
+  }
+  .flow-line{width:2px;flex:1;background:linear-gradient(var(--border),var(--border));min-height:18px;margin:6px 0;}
+  .flow-step:last-child .flow-line{display:none;}
+  .flow-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:16px 20px;margin-bottom:14px;
+  }
+  .flow-card .who{
+    font-family:'Space Grotesk',sans-serif;font-size:.72rem;font-weight:600;
+    text-transform:uppercase;letter-spacing:.14em;color:var(--accent-2);
+    margin-bottom:5px;
+  }
+  .flow-card h4{font-size:1.02rem;color:#fff;font-weight:600;margin-bottom:4px;}
+  .flow-card p{font-size:.92rem;margin:0;color:var(--text-dim);}
+  .flow-card .eg{
+    display:block;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border);
+    font-size:.86rem;color:var(--text-faint);
+  }
+  .flow-card .eg b{color:var(--accent-2);font-weight:600;}
+  .flow-step.is-green .flow-num{background:#16271d;border-color:#2c4d3a;color:var(--green);}
+  .flow-step.is-accent .flow-num{background:linear-gradient(135deg,#ff6a3d,#ff9a4d);border-color:transparent;}
+  .flow-step.is-blue .flow-num{background:#142033;border-color:#274163;color:var(--blue);}
+
+  /* ── Numbered problem / fix cards ─────────────────── */
+  .cards{display:grid;gap:16px;margin:26px 0;}
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:22px 24px;
+    border-left:4px solid var(--accent);
+  }
+  .card.bad{border-left-color:var(--red);}
+  .card.good{border-left-color:var(--green);}
+  .card .card-head{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+  .card .chip{
+    font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:500;
+    padding:4px 9px;border-radius:6px;letter-spacing:.02em;
+  }
+  .chip.crit{background:#3a1414;color:#ff8a8a;}
+  .chip.bug{background:#3a2a12;color:#ffc861;}
+  .chip.fix{background:#143a26;color:#7fe8a8;}
+  .card h4{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;color:#fff;font-weight:600;}
+  .card p{margin:6px 0 0;font-size:.96rem;}
+  .card .eg{
+    display:block;margin-top:12px;padding:12px 14px;border-radius:8px;
+    background:#00000040;border:1px dashed var(--border);
+    font-size:.88rem;color:var(--text-faint);
+  }
+  .card .eg b{color:var(--accent-2);font-weight:600;}
+  code{
+    font-family:'JetBrains Mono',monospace;font-size:.84em;
+    background:#000;border:1px solid var(--border);
+    padding:2px 7px;border-radius:6px;color:var(--accent-2);
+    word-break:break-word;
+  }
+
+  /* ── Question blocks ──────────────────────────────── */
+  .qa{margin:22px 0;}
+  .qa .q{
+    display:flex;gap:12px;align-items:flex-start;
+    font-family:'Space Grotesk',sans-serif;font-size:1.18rem;font-weight:600;
+    color:#fff;margin-bottom:10px;
+  }
+  .qa .q .qm{color:var(--accent);flex-shrink:0;}
+  .qa .a{padding-left:34px;}
+
+  /* ── Mini diagram strip (key example) ─────────────── */
+  .strip{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    background:var(--bg-soft);border:1px dashed var(--border);
+    border-radius:var(--radius);padding:20px;margin:24px 0;
+    justify-content:center;
+  }
+  .pill{
+    background:var(--surface-2);border:1px solid var(--border);
+    border-radius:12px;padding:10px 14px;text-align:center;min-width:96px;
+  }
+  .pill .pi{font-size:22px;display:block;margin-bottom:4px;}
+  .pill .pl{font-size:.74rem;color:var(--text-dim);line-height:1.3;display:block;}
+  .pill.key{border-color:#3d2a14;background:#1a1209;}
+  .pill.brain{border-color:#3a1f12;background:linear-gradient(135deg,#1f1109,#190f0a);}
+  .arrow{color:var(--accent);font-size:1.2rem;flex-shrink:0;}
+
+  /* ── Glossary ─────────────────────────────────────── */
+  .gloss{display:grid;gap:12px;margin-top:22px;}
+  .gloss .row{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:16px 20px;
+  }
+  .gloss .term{
+    font-family:'Space Grotesk',sans-serif;font-weight:600;color:#fff;
+    font-size:1rem;margin-bottom:3px;
+  }
+  .gloss .term .emo{margin-right:8px;}
+  .gloss .def{font-size:.93rem;color:var(--text-dim);margin:0;}
+  .gloss .def b{color:var(--accent-2);font-weight:600;}
+
+  /* ── Footer ───────────────────────────────────────── */
+  footer{
+    text-align:center;padding:60px 24px 0;color:var(--text-faint);
+    font-size:.86rem;
+  }
+  footer .heart{color:var(--accent);}
+
+  @media print{
+    body{background:#fff;color:#111;}
+    .hero,.toc a,.card,.callout,.flow-card,.gloss .row,.pill{break-inside:avoid;}
+  }
+  @media(max-width:560px){
+    .flow-step{grid-template-columns:44px 1fr;gap:12px;}
+    .flow-num{width:40px;height:40px;}
+    .callout{flex-direction:column;gap:10px;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ════════ HERO ════════ -->
+  <header class="hero">
+    <div class="robot">🤖</div>
+    <div class="eyebrow">A Beginner's Guide · Made for Sreeja</div>
+    <h1>How Our <span class="grad">AI Chatbot</span><br/>Actually Works</h1>
+    <p>No tech background needed. Plain words, and a small real-life example wherever it helps — so by the end you'll genuinely understand what happens when you type a message.</p>
+    <div class="by">☕ Read this top to bottom · takes about 7 minutes</div>
+    <div class="hr-glow"></div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- ════════ TOC ════════ -->
+    <nav class="toc">
+      <h4>What's inside</h4>
+      <ol>
+        <li><a href="#bigpicture">The big picture (in one breath)</a></li>
+        <li><a href="#parts">The three parts, explained simply</a></li>
+        <li><a href="#flow">The full flow — step by step</a></li>
+        <li><a href="#apikey">What on earth is an "API key"?</a></li>
+        <li><a href="#brain">Where does the AI "brain" live?</a></li>
+        <li><a href="#questions">Quick questions, quick answers</a></li>
+        <li><a href="#broken">😈 The dark side — why it wasn't working</a></li>
+        <li><a href="#fixed">What we fixed</a></li>
+        <li><a href="#glossary">Plain-English dictionary</a></li>
+      </ol>
+    </nav>
+
+    <!-- ════════ 1 · BIG PICTURE ════════ -->
+    <section id="bigpicture">
+      <span class="sec-tag">🪄 Start here</span>
+      <h2>The big picture, in one breath</h2>
+      <p class="lead">Our chatbot is basically a <strong>messenger</strong>. You type a question, it carries your question to a very smart AI living on the internet, waits for the answer, and brings that answer back to your screen. That's the whole idea. Everything else is just the <em>how</em>.</p>
+      <div class="callout example">
+        <span class="ico">📱</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>It's like texting a knowledgeable friend. You send a message, your phone delivers it, your friend thinks and types back, and the reply lands in your chat. Our chatbot does exactly this — except the "friend" is an AI, and a few helpers pass the message along behind the scenes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 2 · THE PARTS ════════ -->
+    <section id="parts">
+      <span class="sec-tag">🧩 The pieces</span>
+      <h2>The three parts, explained simply</h2>
+      <p>There are only three things to know. Once these click, the whole thing makes sense.</p>
+
+      <h3>1 · The Website <span style="color:var(--text-faint);font-weight:400">(the "frontend")</span></h3>
+      <p>This is the chat screen you actually see and type into — the boxes, the buttons, the colours. Its only job is to <strong>take what you type</strong> and <strong>show you the reply</strong>. It doesn't do any thinking itself.</p>
+      <div class="callout example">
+        <span class="ico">🖥️</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>Think of an ATM screen. The screen shows buttons and takes your taps, but it isn't where your money is counted — that happens elsewhere. The website is just the screen you interact with.</p>
+        </div>
+      </div>
+
+      <h3>2 · Our Helper <span style="color:var(--text-faint);font-weight:400">(the "backend")</span></h3>
+      <p>This is a small program running quietly behind the scenes that you never see. It <strong>takes your message from the website, attaches our secret password, and passes it on to the AI</strong>. Then it carries the answer back.</p>
+      <div class="callout example">
+        <span class="ico">📦</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>When you order something on Amazon, someone in a warehouse you'll never meet picks your item, packs it, and hands it to delivery. The "Helper" is that behind-the-scenes worker — invisible to you, but doing the real legwork.</p>
+        </div>
+      </div>
+
+      <h3>3 · The AI Brain <span style="color:var(--text-faint);font-weight:400">(the "model", run by Groq)</span></h3>
+      <p>This is the genius that actually reads your question and writes the answer. It's not on your computer — it lives on a company's very powerful machines far away on the internet. We just send our questions to it.</p>
+      <div class="callout example">
+        <span class="ico">🔍</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>It's a bit like Google. When you search, the answers aren't stored on your phone — they come from Google's giant computers somewhere else. The AI brain works the same way: the "thinking" happens far away, and only the answer comes to you.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 3 · FLOW ════════ -->
+    <section id="flow">
+      <span class="sec-tag">🔁 The journey</span>
+      <h2>The full flow, step by step</h2>
+      <p>Let's follow one real message the whole way. Say you type <code>What's a quick pasta recipe?</code> and hit Enter. Here's every stop it makes:</p>
+
+      <div class="flow">
+
+        <div class="flow-step is-accent">
+          <div class="flow-rail"><div class="flow-num">1</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">On the website</div>
+            <h4>You type and hit Enter</h4>
+            <p>Your words instantly appear on screen as a chat bubble. The website also quietly keeps the whole conversation so far, so the AI has the full context.</p>
+            <span class="eg">🔸 <b>Like:</b> hitting "send" on a WhatsApp message — it shows up in the chat right away.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-accent">
+          <div class="flow-rail"><div class="flow-num">2</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">Website → Helper</div>
+            <h4>The website hands your message to our Helper</h4>
+            <p>It packs your message into a small digital envelope and passes it to the behind-the-scenes program. This happens in a blink — you never see it.</p>
+            <span class="eg">🔸 <b>Like:</b> dropping a letter in a postbox — you let go, and it's on its way.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-green">
+          <div class="flow-rail"><div class="flow-num">3</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">Helper · adds the secret password</div>
+            <h4>Our Helper attaches the API key</h4>
+            <p>It clips on our secret password (the "API key") that proves we're allowed to use the AI. It also adds a short note: <em>"You're Sreeja's warm personal assistant — be helpful and call her by name."</em></p>
+            <span class="eg">🔸 <b>Like:</b> swiping your ID card to unlock a door before you can walk through.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-blue">
+          <div class="flow-rail"><div class="flow-num">4</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">Helper → AI Brain</div>
+            <h4>The message travels to the AI over the internet</h4>
+            <p>Your question plus the password zip across the internet to Groq's powerful computers, where the AI reads it.</p>
+            <span class="eg">🔸 <b>Like:</b> your text crossing cell towers to reach a friend in another city.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-blue">
+          <div class="flow-rail"><div class="flow-num">5</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">AI Brain · thinking</div>
+            <h4>The AI writes an answer</h4>
+            <p>It reads everything — your question, the chat so far, and the "be Sreeja's assistant" note — then writes a thoughtful reply. This is the real magic, and it takes about a second.</p>
+            <span class="eg">🔸 <b>Like:</b> a friend reading your text, thinking for a moment, and typing back.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-green">
+          <div class="flow-rail"><div class="flow-num">6</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">AI Brain → Helper</div>
+            <h4>The answer comes back to our Helper</h4>
+            <p>The reply travels back to the behind-the-scenes program, which double-checks it isn't empty and that nothing went wrong.</p>
+            <span class="eg">🔸 <b>Like:</b> the delivery arriving back at the front desk before it reaches your door.</span>
+          </div>
+        </div>
+
+        <div class="flow-step is-accent">
+          <div class="flow-rail"><div class="flow-num">7</div><div class="flow-line"></div></div>
+          <div class="flow-card">
+            <div class="who">Helper → Website → You</div>
+            <h4>It lands on your screen, nicely formatted</h4>
+            <p>The reply appears as a chat bubble — with neat formatting like <strong>bold text</strong>, bullet points, and code blocks. Done! 🎉</p>
+            <span class="eg">🔸 <b>Like:</b> the reply popping up in your chat, ready to read.</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout tip">
+        <span class="ico">⚡</span>
+        <div>
+          <h4>The whole round trip takes about 1–2 seconds</h4>
+          <p>All seven steps happen faster than you can blink twice. The AI lives far away, but the internet is fast — and Groq is one of the speediest AI services around.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 4 · API KEY ════════ -->
+    <section id="apikey">
+      <span class="sec-tag">🔑 The secret password</span>
+      <h2>What on earth is an "API key"?</h2>
+      <p>This is the one word everyone trips on. Good news: it's simple. An <strong>API key</strong> is just a <strong>secret password</strong> that proves we're allowed to use the AI.</p>
+      <div class="callout example">
+        <span class="ico">🏧</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>It works like your <strong>ATM PIN</strong> or your <strong>phone's password</strong>. Type the right one and you're in. Type a wrong one — or leave it blank — and you're locked out. The AI checks our key the same way before it answers anything.</p>
+        </div>
+      </div>
+
+      <p>Let's pretend our key is the simple word <code>123</code> (the real one is a long jumble like <code>gsk_hiPF…cdwS</code>). Here's the little dance that happens every time:</p>
+
+      <div class="strip">
+        <div class="pill"><span class="pi">👩</span><span class="pl">You ask:<br/>"recipe?"</span></div>
+        <span class="arrow">→</span>
+        <div class="pill key"><span class="pi">🔑</span><span class="pl">Helper adds<br/>key <code>123</code></span></div>
+        <span class="arrow">→</span>
+        <div class="pill brain"><span class="pi">🧠</span><span class="pl">AI checks:<br/>"123? ✅ valid!"</span></div>
+        <span class="arrow">→</span>
+        <div class="pill"><span class="pi">💬</span><span class="pl">AI replies<br/>with answer</span></div>
+      </div>
+
+      <p>So your message always goes out <strong>together with the key</strong>, and the AI looks at the key first:</p>
+      <ul class="clean">
+        <li>✅ <strong>Key is correct</strong> → "Access granted" → the AI happily answers.</li>
+        <li>❌ <strong>Key is wrong or missing</strong> → "Access denied" → you get an error and nothing works. <em>(This is exactly what was happening before — more on that in the dark-side section. 😈)</em></li>
+      </ul>
+
+      <div class="callout warn">
+        <span class="ico">🤫</span>
+        <div>
+          <h4>Why the key is kept secret</h4>
+          <p>Anyone who has the key can use the AI <em>on our account</em> — just like anyone with your ATM PIN could use your card. So we hide it in a private file called <code>.env</code> that never gets shared publicly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 5 · BRAIN ════════ -->
+    <section id="brain">
+      <span class="sec-tag">🧠 The genius</span>
+      <h2>Where does the AI "brain" actually live?</h2>
+      <p>Here's a surprise: <strong>we did not build the AI.</strong> Building a smart AI from scratch costs millions of dollars and needs enormous computers. Instead, we <strong>rent</strong> one.</p>
+      <p>A company called <strong>Groq</strong> owns the powerful computers that run the AI. We send our questions to them (with our key), and they send answers back. We pay only for what we use — and it's incredibly cheap, a fraction of a cent per question.</p>
+      <div class="callout example">
+        <span class="ico">💡</span>
+        <div>
+          <h4>Real-life example</h4>
+          <p>It's like <strong>electricity</strong>. You don't build a power plant to light your home — you just plug in and pay for what you use. We don't build a billion-dollar AI to answer questions — we "plug into" Groq's AI and pay per use. Our Helper is simply the plug.</p>
+        </div>
+      </div>
+      <p>And just like switching electricity providers, we can swap which AI we "plug into" by changing a single line in a settings file — picking a faster one or a smarter one — without rebuilding anything.</p>
+    </section>
+
+    <!-- ════════ 6 · QUESTIONS ════════ -->
+    <section id="questions">
+      <span class="sec-tag">❓ Sanity check</span>
+      <h2>Quick questions, quick answers</h2>
+      <p>If you can answer these in your head, you've genuinely understood it. 💪</p>
+
+      <div class="qa">
+        <div class="q"><span class="qm">Q.</span> What is the flow of our chatbot?</div>
+        <div class="a"><p>You type → the website sends it to our backend Helper → the Helper attaches the secret key and sends it to the AI brain (Groq) → the AI thinks and replies → the reply travels back → it appears on your screen.</p></div>
+      </div>
+
+      <div class="qa">
+        <div class="q"><span class="qm">Q.</span> What happens the moment I press Enter?</div>
+        <div class="a"><p>Your message instantly shows on screen, then quietly gets packed up and sent (along with the whole conversation so far) to the backend, which forwards it to the AI.</p></div>
+      </div>
+
+      <div class="qa">
+        <div class="q"><span class="qm">Q.</span> Why do we need an API key?</div>
+        <div class="a"><p>It's our secret password to prove we're allowed to use the AI — like an ATM PIN. No key, or a wrong key, means "access denied" and nothing works.</p></div>
+      </div>
+
+      <div class="qa">
+        <div class="q"><span class="qm">Q.</span> Did we build the AI brain ourselves?</div>
+        <div class="a"><p>Nope! We rent it from Groq, like plugging into electricity instead of building a power plant. Our code just knows how to "plug in" correctly.</p></div>
+      </div>
+
+      <div class="qa">
+        <div class="q"><span class="qm">Q.</span> How does the bot remember what I said earlier?</div>
+        <div class="a"><p>Every time you send a message, we quietly send the <em>whole conversation</em> along with it — so the AI always has the full story, not just your latest line. It's like catching a friend up by repeating the chat so far.</p></div>
+      </div>
+    </section>
+
+    <!-- ════════ 7 · BROKEN ════════ -->
+    <section id="broken">
+      <span class="sec-tag">😈 The dark side</span>
+      <h2>Why it wasn't working before</h2>
+      <p class="lead">When this project first landed, it was completely dead — every message failed. Here's the honest, no-jargon truth. There were <strong>two big killers</strong> and a few smaller gremlins.</p>
+
+      <h3>💀 The two things that killed it</h3>
+      <div class="cards">
+        <div class="card bad">
+          <div class="card-head"><span class="chip crit">SHOWSTOPPER #1</span></div>
+          <h4>It was calling an AI that no longer exists</h4>
+          <p>The code was asking for a specific AI named <code>mixtral-8x7b-32768</code>. But Groq <strong>permanently shut that one down in March 2025</strong> — it's simply gone. So every request bounced back. <em>(There was even a comment in the code claiming it was "updated"… but it was updated to an AI that was already retired.)</em></p>
+          <span class="eg">🔸 <b>Real-life example:</b> like calling a shop using an old phone number that's been disconnected. Doesn't matter how perfectly you dial — nobody's there to pick up.</span>
+        </div>
+        <div class="card bad">
+          <div class="card-head"><span class="chip crit">SHOWSTOPPER #2</span></div>
+          <h4>The secret password was cut short</h4>
+          <p>The API key in the settings was only <strong>50 characters</strong> long, but a real key is <strong>56 characters</strong>. Six characters got chopped off when it was pasted — so it was a wrong password. The AI rejected it every single time with <code>401 Invalid API Key</code>. <em>(This is why, later, you sent me the full key — and the instant we put the complete one in, it sprang to life. ✨)</em></p>
+          <span class="eg">🔸 <b>Real-life example:</b> like typing your password but missing the last few letters. Close isn't good enough — you're still locked out.</span>
+        </div>
+      </div>
+      <p>Either one alone would've stopped everything. <strong>Both</strong> were present — so it was guaranteed to fail no matter what.</p>
+
+      <div class="callout warn">
+        <span class="ico">🕵️‍♀️</span>
+        <div>
+          <h4>The sneaky part: the error message lied</h4>
+          <p>Whenever <em>anything</em> failed, the app showed the same vague message: <em>"AI service failed. Check your API key."</em> So even the disconnected-number problem looked like a password problem. Your friend was probably hunting for a key issue while the real villain was the retired AI. That's the kind of thing that eats hours — and it wasn't her fault at all.</p>
+        </div>
+      </div>
+
+      <h3>🐛 The smaller gremlins hiding underneath</h3>
+      <div class="cards">
+        <div class="card">
+          <div class="card-head"><span class="chip bug">BUG</span><h4>No memory</h4></div>
+          <p>Only your latest line was sent, so the bot forgot everything instantly. Tell it your name, ask "what's my name?" — total blank. (Like a friend who forgets each sentence the moment you finish it.)</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="chip bug">BUG</span><h4>Formatting never showed</h4></div>
+          <p>The AI was told to reply with neat formatting (bullet points, bold). The styling for it existed... but the part that actually <em>displays</em> it was never connected. So answers came out as messy raw symbols like <code>**this**</code>.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="chip bug">BUG</span><h4>Could freeze forever</h4></div>
+          <p>If the AI was slow or got stuck, the app would just hang with no time limit and no way to recover.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="chip bug">BUG</span><h4>Crash on empty replies</h4></div>
+          <p>If the AI ever sent nothing back, the code would throw an error instead of handling it gracefully.</p>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="chip bug">MESS</span><h4>Leftover junk + an exposed-key risk</h4></div>
+          <p>A broken empty folder from a mistyped command was sitting in the project, and there was no safety file to stop the secret key from being shared by accident.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 8 · FIXED ════════ -->
+    <section id="fixed">
+      <span class="sec-tag">✅ The rescue</span>
+      <h2>What we fixed</h2>
+      <p>Here's everything that turned it from "completely dead" into a warm, working personal assistant:</p>
+      <div class="cards">
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">FIXED</span><h4>Pointed it at an AI that actually exists</h4></div>
+          <p>Swapped the retired AI for a current, working one — and made it easy to switch anytime by changing one line. (Like updating that old phone number to the shop's new one.)</p>
+        </div>
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">FIXED</span><h4>Honest, helpful error messages</h4></div>
+          <p>Now the app warns you loudly at startup if the key looks wrong, and each kind of problem gets its <em>own</em> clear message — no more one-size-lies-all.</p>
+        </div>
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">ADDED</span><h4>Real memory</h4></div>
+          <p>The whole conversation now travels with each message, so the bot remembers what you told it.</p>
+        </div>
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">ADDED</span><h4>Neat formatting + safety nets</h4></div>
+          <p>Replies now render with bold text, lists, and code blocks. Plus a time limit so it never freezes, and crash-proofing for empty replies.</p>
+        </div>
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">CLEANED</span><h4>Tidied up & secured</h4></div>
+          <p>Deleted the junk folder and added a safety file so the secret key can't be shared by accident.</p>
+        </div>
+        <div class="card good">
+          <div class="card-head"><span class="chip fix">PERSONAL</span><h4>Made it truly yours, Sreeja</h4></div>
+          <p>Gave it a warm personality that greets you by name and acts as your own personal assistant — helping you plan, write, decide, and learn.</p>
+        </div>
+      </div>
+      <div class="callout tip">
+        <span class="ico">🌟</span>
+        <div>
+          <h4>The one-line summary</h4>
+          <p>It wasn't broken because your friend built it badly — it broke because the AI got retired out from under her <strong>and</strong> the password got cut short, while confusing errors hid both. Two genuinely tricky "gotchas." Now it's fixed, faster, friendlier, and fully yours.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ 9 · GLOSSARY ════════ -->
+    <section id="glossary">
+      <span class="sec-tag">📖 Cheat sheet</span>
+      <h2>Plain-English dictionary</h2>
+      <p>Every slightly-scary word from this guide, in one calm place:</p>
+      <div class="gloss">
+        <div class="row"><div class="term"><span class="emo">🖥️</span>Frontend (the Website)</div><p class="def">The chat screen you see and type into. It only takes input and shows replies — it doesn't think. <b>Like an ATM screen.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">📦</span>Backend (the Helper)</div><p class="def">A hidden program that takes your message, attaches the secret key, and contacts the AI. You never see it. <b>Like an Amazon warehouse worker.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">🧠</span>AI Brain / LLM / Model</div><p class="def">The genius that actually writes the answers. "LLM" just means a very advanced text-writing AI. We rent it. <b>Like Google's computers — the thinking happens far away.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">🏢</span>Groq</div><p class="def">The company whose powerful computers run the AI for us. We send questions; they send answers.</p></div>
+        <div class="row"><div class="term"><span class="emo">🔑</span>API Key</div><p class="def">Our secret password that proves we're allowed to use the AI. Kept hidden. <b>Like your ATM PIN.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">🔌</span>API</div><p class="def">A fancy word for the "doorway" two programs use to talk to each other. <b>Like a customer-care number you call to reach a specific service.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">📨</span>Request & Response</div><p class="def">A "request" is your question going out; a "response" is the answer coming back. <b>Like sending a text and getting a reply.</b></p></div>
+        <div class="row"><div class="term"><span class="emo">🗂️</span>.env file</div><p class="def">A private settings file where secrets (like the API key) are stored safely, away from public eyes.</p></div>
+        <div class="row"><div class="term"><span class="emo">⛔</span>401 Error</div><p class="def">The computer's way of saying "your password is wrong, access denied." Our old cut-short key caused this.</p></div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Made with <span class="heart">♥</span> for Sreeja — you've got this. 🚀</p>
+      <p style="margin-top:8px;font-size:.78rem;">Tip: open this file in any browser. To save it as a PDF, just press <code>Ctrl/Cmd + P</code> → "Save as PDF".</p>
+    </footer>
+
+  </div>
+</body>
+</html>

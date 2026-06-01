@@ -1,0 +1,19 @@
+// ============================================================
+// Loader.jsx — Animated typing dots while AI is responding
+// ============================================================
+
+export default function Loader() {
+  return (
+    <div className="loader-row">
+      {/* Bot avatar */}
+      <div className="avatar bot-avatar">🤖</div>
+
+      {/* Bouncing dots */}
+      <div className="loader-bubble">
+        <span className="dot" />
+        <span className="dot" />
+        <span className="dot" />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,55 @@
+============================================================
+   🤖  SREEJA'S AI CHATBOT  —  read me first :)
+============================================================
+
+Hi Sreeja! This is your own personal AI assistant.
+Getting it running takes 2 easy steps.
+
+------------------------------------------------------------
+STEP 1 — Install Node.js (only once, ever)
+------------------------------------------------------------
+The chatbot needs a free helper called "Node.js".
+
+  1. Go to:  https://nodejs.org
+  2. Download the big green "LTS" button.
+  3. Install it (just keep clicking Next / Continue).
+
+That's it. You never have to do this again.
+
+------------------------------------------------------------
+STEP 2 — Start the chatbot
+------------------------------------------------------------
+  • On a Mac:      double-click  "Start-Chatbot-MAC.command"
+  • On Windows:    double-click  "Start-Chatbot-WINDOWS.bat"
+
+The first time, it will take a minute to set itself up
+(you'll see text scrolling — that's normal, just wait).
+
+Then your browser will open automatically at:
+      http://localhost:5173
+
+Start chatting!  🎉
+
+------------------------------------------------------------
+TO STOP IT
+------------------------------------------------------------
+  • Mac:      close the Terminal window that opened.
+  • Windows:  close the two black command windows.
+
+------------------------------------------------------------
+WANT TO LEARN HOW IT WORKS?
+------------------------------------------------------------
+Open "Sreeja-Chatbot-Guide.html" in any browser — it's a
+friendly, no-jargon guide that explains everything. 💛
+
+------------------------------------------------------------
+IF SOMETHING GOES WRONG
+------------------------------------------------------------
+  • Mac may say the file is "from an unidentified developer".
+    Right-click the file → Open → Open. (Only needed once.)
+  • Make sure you finished STEP 1 (Node.js).
+  • The AI key included here is already set up, so it should
+    just work. If the bot ever says "invalid key", the key may
+    need refreshing — ask Bhargav.
+
+Enjoy! — made with ♥ for you.

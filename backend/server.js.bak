@@ -1,0 +1,212 @@
+// ============================================================
+// AI Chatbot - Backend Server
+// Node.js + Express + Groq API (groq.com)
+// ============================================================
+
+const express = require("express");
+const cors    = require("cors");
+const Groq    = require("groq-sdk");
+require("dotenv").config();
+
+const app  = express();
+const PORT = process.env.PORT || 5000;
+
+// ── Config (env-driven, with sensible defaults) ──────────────
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+// openai/gpt-oss-20b is OpenAI's fast GPT model hosted on Groq.
+// The old mixtral-8x7b-32768 and llama3-8b-8192 were decommissioned by Groq.
+const MODEL          = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+const MAX_TOKENS     = Number(process.env.MAX_TOKENS) || 1024;
+const TEMPERATURE    = Number(process.env.TEMPERATURE) || 0.7;
+const REQUEST_TIMEOUT_MS = Number(process.env.GROQ_TIMEOUT_MS) || 30000;
+const MAX_MESSAGE_LEN    = Number(process.env.MAX_MESSAGE_LEN) || 8000;
+const MAX_HISTORY        = Number(process.env.MAX_HISTORY) || 20; // turns kept for context
+
+// The person this assistant serves. Override with USER_NAME in .env.
+const USER_NAME = process.env.USER_NAME || "Sreeja";
+
+// Comma-separated list of allowed origins, falls back to local dev ports.
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS ||
+  "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+const SYSTEM_PROMPT = `You are ${USER_NAME}'s personal AI assistant — devoted, warm, and endlessly capable. Your entire purpose is to help ${USER_NAME} with anything she needs: planning her day, writing and editing, research, learning new things, brainstorming, coding, making decisions, organizing tasks, drafting messages, creative work, and everyday questions. Treat every request as important.
+
+How you speak to her:
+- Always address her warmly by her name, ${USER_NAME}. Open each reply with a personal, caring touch (for example: "Of course, ${USER_NAME}!", "Happy to help, ${USER_NAME}.", "Great question, ${USER_NAME} —") and let her name appear naturally once or twice more where it feels genuine. Never overdo it to the point of sounding robotic.
+- Be supportive, encouraging, and friendly — like a trusted assistant who knows her well and is always on her side. End longer replies with a gentle offer to help further (e.g., "Anything else I can take off your plate, ${USER_NAME}?").
+
+How you help her:
+- Be genuinely useful: clear, accurate, and thorough. Anticipate what she might need next and offer thoughtful suggestions.
+- Match her depth — quick and concise for simple questions, detailed and well-structured for bigger tasks.
+- Use markdown when it improves clarity: code blocks for code, bullet points for lists, tables for comparisons, headings for long answers.
+- If something is ambiguous, ask a brief clarifying question rather than guessing.
+- If you don't know something or can't do it, say so honestly and kindly, then offer the best alternative.
+
+Above all: be the kind of personal assistant ${USER_NAME} feels lucky to have.`;
+
+// ── Startup validation ───────────────────────────────────────
+// Fail loudly so a missing/obviously-malformed key is caught before traffic.
+if (!GROQ_API_KEY) {
+  console.error(
+    "❌ FATAL: GROQ_API_KEY is not set. Add it to backend/.env " +
+      "(get a free key at https://console.groq.com/keys) and restart."
+  );
+  process.exit(1);
+}
+if (!GROQ_API_KEY.startsWith("gsk_") || GROQ_API_KEY.length < 56) {
+  console.warn(
+    "⚠️  GROQ_API_KEY looks malformed (Groq keys start with 'gsk_' and are " +
+      `~56 chars; got ${GROQ_API_KEY.length}). Requests will likely 401. ` +
+      "Double-check the key copied from https://console.groq.com/keys."
+  );
+}
+
+// ── Middleware ───────────────────────────────────────────────
+app.use(cors({
+  origin: ALLOWED_ORIGINS,
+  methods: ["GET", "POST"],
+}));
+app.use(express.json({ limit: "1mb" }));
+
+// ── Groq Client ──────────────────────────────────────────────
+// API key is from groq.com — stored securely in .env
+const client = new Groq({
+  apiKey: GROQ_API_KEY,
+  timeout: REQUEST_TIMEOUT_MS,
+  maxRetries: 2,
+});
+
+// ── Helpers ──────────────────────────────────────────────────
+// Accept either a single { message } (legacy) or a { messages: [...] }
+// conversation history so the bot has memory across turns.
+function buildMessages(body) {
+  const { message, messages } = body || {};
+
+  let history = [];
+  if (Array.isArray(messages)) {
+    history = messages
+      .filter(
+        (m) =>
+          m &&
+          (m.role === "user" || m.role === "assistant" || m.role === "bot") &&
+          typeof m.content === "string" &&
+          m.content.trim() !== ""
+      )
+      // Normalize the frontend's "bot" role to the API's "assistant".
+      .map((m) => ({
+        role: m.role === "bot" ? "assistant" : m.role,
+        content: m.content.slice(0, MAX_MESSAGE_LEN),
+      }))
+      .slice(-MAX_HISTORY);
+  } else if (typeof message === "string" && message.trim() !== "") {
+    history = [{ role: "user", content: message.slice(0, MAX_MESSAGE_LEN) }];
+  }
+
+  if (history.length === 0) return null;
+
+  return [{ role: "system", content: SYSTEM_PROMPT }, ...history];
+}
+
+// ── Health Check ─────────────────────────────────────────────
+app.get("/", (req, res) => {
+  res.json({ status: "Groq AI Chatbot Backend is running 🚀", model: MODEL });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ ok: true, model: MODEL });
+});
+
+// ── POST /chat ───────────────────────────────────────────────
+// Receives user message (or full history) → sends to Groq → returns AI reply
+app.post("/chat", async (req, res) => {
+  const apiMessages = buildMessages(req.body);
+
+  if (!apiMessages) {
+    return res
+      .status(400)
+      .json({ error: "Message is required.", code: "INVALID_REQUEST" });
+  }
+
+  const lastUser = [...apiMessages].reverse().find((m) => m.role === "user");
+  console.log("📨 User:", (lastUser?.content || "").slice(0, 120));
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      messages: apiMessages,
+      max_tokens: MAX_TOKENS,
+      temperature: TEMPERATURE,
+    });
+
+    const reply = completion?.choices?.[0]?.message?.content?.trim();
+
+    if (!reply) {
+      console.error("❌ Groq returned an empty completion:", JSON.stringify(completion));
+      return res.status(502).json({
+        error: "The AI returned an empty response. Please try again.",
+        code: "EMPTY_RESPONSE",
+      });
+    }
+
+    console.log("🤖 AI:", reply.slice(0, 80) + (reply.length > 80 ? "…" : ""));
+    return res.status(200).json({ reply });
+
+  } catch (error) {
+    // Map Groq/SDK errors to meaningful HTTP responses.
+    const status = error?.status || error?.response?.status;
+    console.error(`❌ Groq API error (${status || "no status"}):`, error?.message);
+
+    if (status === 401) {
+      return res.status(502).json({
+        error: "AI service rejected the API key. Check GROQ_API_KEY in backend/.env.",
+        code: "INVALID_API_KEY",
+      });
+    }
+    if (status === 404) {
+      return res.status(502).json({
+        error: `The configured model "${MODEL}" is not available. Update GROQ_MODEL.`,
+        code: "MODEL_NOT_FOUND",
+      });
+    }
+    if (status === 429) {
+      return res.status(429).json({
+        error: "Rate limit reached on the AI service. Please wait and try again.",
+        code: "RATE_LIMITED",
+      });
+    }
+    if (error?.name === "APIConnectionTimeoutError" || /timeout/i.test(error?.message || "")) {
+      return res.status(504).json({
+        error: "The AI service timed out. Please try again.",
+        code: "TIMEOUT",
+      });
+    }
+
+    return res.status(502).json({
+      error: "AI service failed. Please try again in a moment.",
+      code: "UPSTREAM_ERROR",
+    });
+  }
+});
+
+// ── 404 fallthrough ──────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found.", code: "NOT_FOUND" });
+});
+
+// ── Start Server ─────────────────────────────────────────────
+const server = app.listen(PORT, () => {
+  console.log(`✅  Server running on http://localhost:${PORT}  (model: ${MODEL})`);
+});
+
+// Graceful shutdown
+for (const sig of ["SIGINT", "SIGTERM"]) {
+  process.on(sig, () => {
+    console.log(`\n${sig} received — shutting down.`);
+    server.close(() => process.exit(0));
+  });
+}
+
+module.exports = app; // exported for testing

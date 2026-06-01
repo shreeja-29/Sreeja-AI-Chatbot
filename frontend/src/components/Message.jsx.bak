@@ -1,0 +1,46 @@
+// ============================================================
+// Message.jsx — Single chat message bubble
+// User = right side (blue), Bot = left side (dark)
+// Bot replies are rendered as markdown (code blocks, lists, etc).
+// ============================================================
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+export default function Message({ role, content, onDelete }) {
+  const isUser = role === "user";
+
+  return (
+    <div className={`message-row ${isUser ? "user" : "bot"}`}>
+      {/* Avatar */}
+      <div className={`avatar ${isUser ? "user-avatar" : "bot-avatar"}`}>{isUser ? "👤" : "🤖"}</div>
+
+      {/* Bubble */}
+      <div className={`bubble ${isUser ? "user-bubble" : "bot-bubble"}`}>
+        {isUser ? (
+          // User text is shown verbatim (no markdown), preserving line breaks.
+          content.split("\n").map((line, i, arr) => (
+            <span key={i}>
+              {line}
+              {i < arr.length - 1 && <br />}
+            </span>
+          ))
+        ) : (
+          // Bot replies render markdown. Links open safely in a new tab.
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              a: ({ node, ...props }) => (
+                <a {...props} target="_blank" rel="noopener noreferrer" />
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        )}
+        {isUser && onDelete && (
+          <button className="delete-btn" onClick={onDelete} aria-label="Delete message">🗑️</button>
+        )}
+      </div>
+    </div>
+  );
+}
