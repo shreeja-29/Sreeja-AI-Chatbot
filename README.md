@@ -101,4 +101,9 @@ Errors: `{ "error": "message", "code": "ERROR_CODE" }` with appropriate HTTP sta
 | Frontend | React 18, Vite, Axios, react-markdown |
 | Backend  | Node.js, Express        |
 | AI       | Groq API, OpenAI GPT-OSS 20B |
-| Styling  | Pure CSS                |
+| Styling  | Pure CSS  
+
+
+
+THIS PROJECT URL : http://localhost:5173
+
